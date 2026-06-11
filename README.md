@@ -16,4 +16,9 @@ Este repositório contém uma suite de testes automatizados desenvolvida para va
 4. **Segurança:** Testes de injeção de dados inválidos (Data Type Validation) e validação de cabeçalhos de segurança (OWASP).
 
 ## 🚀 Como Executar Localmente
-*(Instruções a serem adicionadas após configurarmos o Newman)*
+Para rodar esta suite de testes na sua máquina, certifique-se de ter o [Node.js](https://nodejs.org/) instalado.
+
+1. Instale o Newman globalmente:
+   npm install -g newman
+Execute a coleção:
+newman run nome_do_arquivo_da_colecao.json
