@@ -9,6 +9,10 @@ Este repositório contém uma suite de testes automatizados desenvolvida para va
 - **Newman:** Execução automatizada da suite via linha de comando (CLI).
 - **Node.js:** Ambiente de execução.
 
+## 🌐 Gateways Integrados
+- **Stripe:** Validação de fluxos transacionais e tratamento de retornos financeiros utilizando arquitetura `x-www-form-urlencoded`.
+- **Mercado Pago:** *(Em desenvolvimento)* Validação de liquidação e conciliação utilizando padrão `application/json`.
+
 ## 🧪 Casos de Teste Mapeados
 1. **Health Check & Autenticação:** Validação da geração de tokens OAuth2.0 / Bearer.
 2. **Fluxo de Autorização:** Simulação de transações aprovadas e negadas (validação de *status codes* e *payloads* de resposta).
