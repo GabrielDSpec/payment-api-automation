@@ -73,23 +73,65 @@
                   "listen": "test",
                   "script": {
                     "exec": [
-                      "// 1. Valida se a requisição foi um sucesso\r",
-                      "pm.test(\"Status Code deve ser 200 OK\", function () {\r",
+                      "// 1. Valida o sucesso da comunicação\r",
+                      "pm.test(\"Status Code deve ser 200 OK - Transação Processada\", function () {\r",
                       "    pm.response.to.have.status(200);\r",
                       "});\r",
                       "\r",
-                      "// 2. Valida a performance (missão crítica em pagamentos)\r",
-                      "pm.test(\"Tempo de resposta deve ser menor que 800ms\", function () {\r",
-                      "    pm.expect(pm.response.responseTime).to.be.below(800);\r",
+                      "// 2. Validação Cruzada do Valor Dinâmico\r",
+                      "pm.test(\"O valor processado deve ser exatamente o valor gerado no Pre-request\", function () {\r",
+                      "    var jsonData = pm.response.json();\r",
+                      "    var valorEsperado = parseInt(pm.variables.get(\"dynamicAmount\"));\r",
+                      "    \r",
+                      "    pm.expect(jsonData.amount).to.eql(valorEsperado);\r",
                       "});\r",
                       "\r",
-                      "// 3. Valida se o servidor processou os dados corretamente\r",
-                      "pm.test(\"O valor da transação deve estar correto no retorno\", function () {\r",
+                      "// 3. Validação Cruzada da Bandeira do Cartão\r",
+                      "pm.test(\"A bandeira retornada deve corresponder ao tipo de token enviado\", function () {\r",
                       "    var jsonData = pm.response.json();\r",
-                      "    // O postman-echo devolve os dados dentro de um objeto chamado 'data'\r",
-                      "    pm.expect(jsonData.data.amount).to.eql(150.00);\r",
-                      "    pm.expect(jsonData.data.payment_method.card_brand).to.eql(\"Mastercard\");\r",
+                      "    var bandeiraEsperada = pm.variables.get(\"expectedBrand\");\r",
+                      "    pm.expect(jsonData.payment_method_details.card.brand).to.eql(bandeiraEsperada);\r",
+                      "});\r",
+                      "\r",
+                      "// 4. Valida o ciclo de vida do pagamento\r",
+                      "pm.test(\"O status final do pagamento deve ser 'succeeded'\", function () {\r",
+                      "    var jsonData = pm.response.json();\r",
+                      "    pm.expect(jsonData.status).to.eql(\"succeeded\");\r",
                       "});"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                },
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "exec": [
+                      "// 1. Gera um valor randômico entre R$ 10,00 e R$ 500,00 (convertido para centavos)\r",
+                      "var minCents = 1000;  // R$ 10,00\r",
+                      "var maxCents = 50000; // R$ 500,00\r",
+                      "var randomAmount = Math.floor(Math.random() * (maxCents - minCents + 1)) + minCents;\r",
+                      "pm.variables.set(\"dynamicAmount\", randomAmount);\r",
+                      "\r",
+                      "// 2. Sorteia uma bandeira de cartão de teste da Stripe e mapeia o retorno esperado\r",
+                      "var cardPool = [\r",
+                      "    { token: \"tok_visa\", expectedBrand: \"visa\" },\r",
+                      "    { token: \"tok_mastercard\", expectedBrand: \"mastercard\" },\r",
+                      "    { token: \"tok_amex\", expectedBrand: \"amex\" }\r",
+                      "];\r",
+                      "\r",
+                      "var randomIndex = Math.floor(Math.random() * cardPool.length);\r",
+                      "var chosenCard = cardPool[randomIndex];\r",
+                      "\r",
+                      "pm.variables.set(\"dynamicSource\", chosenCard.token);\r",
+                      "pm.variables.set(\"expectedBrand\", chosenCard.expectedBrand);\r",
+                      "\r",
+                      "// 3. Mantém o ID da transação dinâmico para log\r",
+                      "var geradorId = \"TXN-\" + pm.variables.replaceIn('{{$guid}}');\r",
+                      "pm.variables.set(\"dynamicTxnId\", geradorId);\r",
+                      "\r",
+                      "console.log(`[PRE-REQUEST] Valor Sorteado: ${randomAmount} centavos | Cartão: ${chosenCard.expectedBrand}`);"
                     ],
                     "type": "text/javascript",
                     "packages": {},
@@ -112,7 +154,35 @@
                 "header": [],
                 "body": {
                   "mode": "urlencoded",
-                  "urlencoded": []
+                  "urlencoded": [
+                    {
+                      "key": "amount",
+                      "value": "{{dynamicAmount}}",
+                      "description": "amount - valor",
+                      "type": "text",
+                      "uuid": "5a54099a-40f5-47a7-ba92-0144eb2ddba8"
+                    },
+                    {
+                      "key": "currency",
+                      "value": "brl",
+                      "description": "currency - moeda",
+                      "type": "text",
+                      "uuid": "a97d2103-d073-46d1-b9db-52d13d1bf04b"
+                    },
+                    {
+                      "key": "source",
+                      "value": "{{dynamicSource}}",
+                      "description": "brand - bandeira",
+                      "type": "text",
+                      "uuid": "f70ebb75-882a-4ca1-8af5-f8e3490da90e"
+                    },
+                    {
+                      "key": "description",
+                      "value": "Automação Dinâmica ID {{dynamicTxnId}}",
+                      "type": "text",
+                      "uuid": "72f85647-d7ed-45d0-83b2-88195946a7a4"
+                    }
+                  ]
                 },
                 "url": {
                   "raw": "https://api.stripe.com/v1/charges",
