@@ -67,7 +67,7 @@
           "name": "Authorization Flow",
           "item": [
             {
-              "name": "Credit Card Authorization",
+              "name": "Sale Credit Card",
               "event": [
                 {
                   "listen": "test",
@@ -205,6 +205,98 @@
               "response": []
             },
             {
+              "name": "Auth Base (For Partial Refund)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Status Code deve ser 200 OK - Venda Base Criada\", function () {\r",
+                      "    pm.response.to.have.status(200);\r",
+                      "});\r",
+                      "\r",
+                      "// Salva o ID apenas se a venda for aprovada\r",
+                      "if (pm.response.code === 200) {\r",
+                      "    var jsonData = pm.response.json();\r",
+                      "    pm.variables.set(\"partialChargeId\", jsonData.id);\r",
+                      "    console.log(\"SUCESSO: ID para Estorno Parcial gerado -> \" + jsonData.id);\r",
+                      "} else {\r",
+                      "    console.log(\"ALERTA: A Venda Base falhou -> \", pm.response.json());\r",
+                      "}"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                },
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "exec": [
+                      ""
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{stripe_api_key}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "urlencoded",
+                  "urlencoded": [
+                    {
+                      "key": "amount",
+                      "value": "15000",
+                      "description": "amount - valor",
+                      "type": "text",
+                      "uuid": "5a54099a-40f5-47a7-ba92-0144eb2ddba8"
+                    },
+                    {
+                      "key": "currency",
+                      "value": "brl",
+                      "description": "currency - moeda",
+                      "type": "text",
+                      "uuid": "a97d2103-d073-46d1-b9db-52d13d1bf04b"
+                    },
+                    {
+                      "key": "source",
+                      "value": "tok_visa",
+                      "description": "brand - bandeira",
+                      "type": "text",
+                      "uuid": "f70ebb75-882a-4ca1-8af5-f8e3490da90e"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "https://api.stripe.com/v1/charges",
+                  "protocol": "https",
+                  "host": [
+                    "api",
+                    "stripe",
+                    "com"
+                  ],
+                  "path": [
+                    "v1",
+                    "charges"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
               "name": "Refund Transaction",
               "event": [
                 {
@@ -281,14 +373,195 @@
                 }
               },
               "response": []
+            },
+            {
+              "name": "Declined Transaction (Insufficient Funds)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Status Code DEVE ser 402 Payment Required\", function () {\r",
+                      "    pm.response.to.have.status(402);\r",
+                      "});\r",
+                      "\r",
+                      "pm.test(\"A mensagem de erro deve ser de Saldo Insuficiente\", function () {\r",
+                      "    var jsonData = pm.response.json();\r",
+                      "    pm.expect(jsonData.error.type).to.eql(\"card_error\");\r",
+                      "    pm.expect(jsonData.error.decline_code).to.eql(\"insufficient_funds\");\r",
+                      "});"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{stripe_api_key}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "urlencoded",
+                  "urlencoded": [
+                    {
+                      "key": "amount",
+                      "value": "15000",
+                      "type": "text",
+                      "uuid": "60557eae-86dd-4dd5-a06f-862c476e99ac"
+                    },
+                    {
+                      "key": "currency",
+                      "value": "brl",
+                      "type": "text",
+                      "uuid": "f30ecf88-e5cd-4c9d-a7f7-8c93537656d6"
+                    },
+                    {
+                      "key": "source",
+                      "value": "tok_chargeDeclinedInsufficientFunds",
+                      "type": "text",
+                      "uuid": "5d77897a-8424-45b3-bfb0-63e54a295a4c"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "https://api.stripe.com/v1/charges",
+                  "protocol": "https",
+                  "host": [
+                    "api",
+                    "stripe",
+                    "com"
+                  ],
+                  "path": [
+                    "v1",
+                    "charges"
+                  ]
+                }
+              },
+              "response": []
             }
           ]
+        },
+        {
+          "name": "Partial Refund Transaction",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status Code deve ser 200 OK - Estorno Parcial Realizado\", function () {\r",
+                  "    pm.response.to.have.status(200);\r",
+                  "});\r",
+                  "\r",
+                  "pm.test(\"O valor estornado deve ser exatamente 500 centavos (R$ 5,00)\", function () {\r",
+                  "    var jsonData = pm.response.json();\r",
+                  "    pm.expect(jsonData.amount).to.eql(500);\r",
+                  "});\r",
+                  "\r",
+                  "// Exibe o motivo exato da recusa no console se a Stripe negar o estorno\r",
+                  "if (pm.response.code !== 200) {\r",
+                  "    var erroStripe = pm.response.json();\r",
+                  "    console.log(\"Motivo da recusa da Stripe: \", erroStripe.error.message);\r",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "pm.request.body.urlencoded.add({ key: 'amount', value: '500' });"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{stripe_api_key}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "charge",
+                  "value": "{{partialChargeId}}",
+                  "type": "text",
+                  "uuid": "13838dd3-bd4e-4277-9c0d-c604d1b57387"
+                }
+              ]
+            },
+            "url": {
+              "raw": "https://api.stripe.com/v1/refunds",
+              "protocol": "https",
+              "host": [
+                "api",
+                "stripe",
+                "com"
+              ],
+              "path": [
+                "v1",
+                "refunds"
+              ]
+            }
+          },
+          "response": []
         }
       ]
     },
     {
       "name": "Mercado Pago API",
       "item": []
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          "// Este teste rodará automaticamente após TODAS as requisições desta pasta\r",
+          "pm.test(\"SLA de Performance: O tempo de resposta deve ser inferior a 1500ms (Timeout Mapeado)\", function () {\r",
+          "    pm.expect(pm.response.responseTime).to.be.below(1500);\r",
+          "});"
+        ]
+      }
     }
   ]
 }
