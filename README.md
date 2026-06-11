@@ -1,5 +1,7 @@
 # 💳 Payment Gateway API Automation Suite
 
+[![Newman Automated API Tests](https://github.com/GabrielDSpec/payment-api-automation/actions/workflows/api-tests.yml/badge.svg)](https://github.com/GabrielDSpec/payment-api-automation/actions/workflows/api-tests.yml)
+
 ## 🎯 Objetivo do Projeto
 Este repositório contém uma suite de testes automatizados desenvolvida para validar fluxos críticos em ecossistemas de pagamentos e adquirência. O foco é garantir a integridade dos dados, segurança e resiliência em operações financeiras (Autorização, Captura, Tokenização e Estorno).
 
