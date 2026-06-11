@@ -1,0 +1,68 @@
+{
+  "info": {
+    "_postman_id": "f052c978-5605-413b-8dac-aa04c210f14b",
+    "name": "Payment-Gateway-API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "55841917"
+  },
+  "item": [
+    {
+      "name": "Auth & Tokenization",
+      "item": [
+        {
+          "name": "Health Check",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"O Status Code deve ser 200 OK\", function () {\r",
+                  "    pm.response.to.have.status(200);\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "https://postman-echo.com/get",
+              "protocol": "https",
+              "host": [
+                "postman-echo",
+                "com"
+              ],
+              "path": [
+                "get"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Authorization Flow",
+      "item": []
+    },
+    {
+      "name": "Refund & Settlement",
+      "item": []
+    }
+  ]
+}
