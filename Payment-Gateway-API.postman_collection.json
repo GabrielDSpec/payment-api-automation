@@ -97,7 +97,12 @@
                       "pm.test(\"O status final do pagamento deve ser 'succeeded'\", function () {\r",
                       "    var jsonData = pm.response.json();\r",
                       "    pm.expect(jsonData.status).to.eql(\"succeeded\");\r",
-                      "});"
+                      "});\r",
+                      "\r",
+                      "// 5. Captura o ID da cobrança gerado pela Stripe para usar no Estorno\r",
+                      "var jsonData = pm.response.json();\r",
+                      "pm.variables.set(\"stripeChargeId\", jsonData.id);\r",
+                      "console.log(`[AUTH] Cobrança gerada com sucesso na Stripe. Charge ID: ${jsonData.id}`);"
                     ],
                     "type": "text/javascript",
                     "packages": {},
@@ -109,16 +114,16 @@
                   "script": {
                     "exec": [
                       "// 1. Gera um valor randômico entre R$ 10,00 e R$ 500,00 (convertido para centavos)\r",
-                      "var minCents = 1000;  // R$ 10,00\r",
-                      "var maxCents = 50000; // R$ 500,00\r",
+                      "var minCents = 1000;\r",
+                      "var maxCents = 50000;\r",
                       "var randomAmount = Math.floor(Math.random() * (maxCents - minCents + 1)) + minCents;\r",
                       "pm.variables.set(\"dynamicAmount\", randomAmount);\r",
                       "\r",
-                      "// 2. Sorteia uma bandeira de cartão de teste da Stripe e mapeia o retorno esperado\r",
+                      "// 2. Sorteia bandeiras garantidas de aprovação (Caminho Feliz)\r",
                       "var cardPool = [\r",
-                      "    { token: \"tok_visa\", expectedBrand: \"visa\" },\r",
-                      "    { token: \"tok_mastercard\", expectedBrand: \"mastercard\" },\r",
-                      "    { token: \"tok_amex\", expectedBrand: \"amex\" }\r",
+                      "    { token: \"tok_visa\", expectedBrand: \"visa\" },       // Visa Aprovado\r",
+                      "    { token: \"tok_discover\", expectedBrand: \"discover\" }, // Discover Aprovado\r",
+                      "    { token: \"tok_mastercard\", expectedBrand: \"mastercard\" } // Mastercard Aprovado\r",
                       "];\r",
                       "\r",
                       "var randomIndex = Math.floor(Math.random() * cardPool.length);\r",
@@ -127,7 +132,7 @@
                       "pm.variables.set(\"dynamicSource\", chosenCard.token);\r",
                       "pm.variables.set(\"expectedBrand\", chosenCard.expectedBrand);\r",
                       "\r",
-                      "// 3. Mantém o ID da transação dinâmico para log\r",
+                      "// 3. Mantém o ID da transação dinâmico\r",
                       "var geradorId = \"TXN-\" + pm.variables.replaceIn('{{$guid}}');\r",
                       "pm.variables.set(\"dynamicTxnId\", geradorId);\r",
                       "\r",
@@ -195,6 +200,84 @@
                   "path": [
                     "v1",
                     "charges"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Refund Transaction",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "// 1. Valida se o estorno foi aceito pelo gateway\r",
+                      "pm.test(\"Status Code deve ser 200 OK - Estorno Realizado\", function () {\r",
+                      "    pm.response.to.have.status(200);\r",
+                      "});\r",
+                      "\r",
+                      "// 2. Valida se o objeto retornado é realmente um estorno\r",
+                      "pm.test(\"O objeto retornado deve ser do tipo 'refund'\", function () {\r",
+                      "    var jsonData = pm.response.json();\r",
+                      "    pm.expect(jsonData.object).to.eql(\"refund\");\r",
+                      "});\r",
+                      "\r",
+                      "// 3. Valida se o status do estorno é sucesso\r",
+                      "pm.test(\"O status do estorno deve ser 'succeeded'\", function () {\r",
+                      "    var jsonData = pm.response.json();\r",
+                      "    pm.expect(jsonData.status).to.eql(\"succeeded\");\r",
+                      "});\r",
+                      "\r",
+                      "// 4. Valida se o estorno foi aplicado na cobrança correta (Cross-Validation)\r",
+                      "pm.test(\"O ID da cobrança estornada deve ser o mesmo da Autorização\", function () {\r",
+                      "    var jsonData = pm.response.json();\r",
+                      "    var chargeOriginal = pm.variables.get(\"stripeChargeId\");\r",
+                      "    \r",
+                      "    pm.expect(jsonData.charge).to.eql(chargeOriginal);\r",
+                      "});"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{stripe_api_key}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "urlencoded",
+                  "urlencoded": [
+                    {
+                      "key": "charge",
+                      "value": "{{stripeChargeId}}",
+                      "type": "text",
+                      "uuid": "f62b62a0-7d9c-4af5-9405-fa9fb91aa8cb"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "https://api.stripe.com/v1/refunds",
+                  "protocol": "https",
+                  "host": [
+                    "api",
+                    "stripe",
+                    "com"
+                  ],
+                  "path": [
+                    "v1",
+                    "refunds"
                   ]
                 }
               },
