@@ -1,0 +1,30 @@
+name: Newman Automated API Tests
+
+# Define que a esteira vai rodar toda vez que houver um "push" para a ramificação principal
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  test-api:
+    runs-on: ubuntu-latest # O servidor virtual do GitHub será um Linux Ubuntu
+
+    steps:
+      # 1. Puxa os seus arquivos do repositório para o servidor
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # 2. Prepara o ambiente Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # 3. Instala o Newman no servidor
+      - name: Install Newman
+        run: npm install -g newman
+
+      # 4. Roda os testes, puxando a chave da Stripe que guardamos no cofre
+      - name: Run Postman Collection
+        run: newman run Payment-Gateway-API.postman_collection.json --env-var "stripe_api_key=${{ secrets.STRIPE_API_KEY }}"
