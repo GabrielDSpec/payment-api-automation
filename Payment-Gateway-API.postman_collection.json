@@ -637,6 +637,11 @@
               "listen": "test",
               "script": {
                 "exec": [
+                  "if (pm.response.code !== 201) {\r",
+                  "    console.log(\"ERRO DETALHADO DO PAYPAL:\");\r",
+                  "    console.log(pm.response.text());\r",
+                  "}\r",
+                  "\r",
                   "pm.test(\"Status Code deve ser 201 Created\", function () {\r",
                   "    pm.response.to.have.status(201);\r",
                   "});\r",
@@ -655,7 +660,8 @@
                   "} else {\r",
                   "    console.log(\"Falha ao criar ordem. Código: \" + pm.response.code);\r",
                   "    console.log(\"Resposta: \" + pm.response.text());\r",
-                  "}"
+                  "}\r",
+                  ""
                 ],
                 "type": "text/javascript",
                 "packages": {},
