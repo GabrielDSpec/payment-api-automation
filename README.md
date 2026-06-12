@@ -12,14 +12,14 @@ Este repositório contém uma suite de testes automatizados desenvolvida para va
 - **Node.js:** Ambiente de execução.
 
 ## 🌐 Gateways Integrados
-- **Stripe:** Validação de fluxos transacionais e tratamento de retornos financeiros utilizando arquitetura `x-www-form-urlencoded`.
-- **Mercado Pago:** *(Em desenvolvimento)* Validação de liquidação e conciliação utilizando padrão `application/json`.
+- **Stripe:** Validação de fluxos transacionais (Auth, Capture, Refund) utilizando arquitetura `x-www-form-urlencoded`.
+- **PayPal:** Implementação robusta de integração via **OAuth2**, incluindo a geração dinâmica de *Access Tokens* e encadeamento de ordens (Order Creation -> Order Capture).
 
 ## 🧪 Casos de Teste Mapeados
-1. **Health Check & Autenticação:** Validação da geração de tokens OAuth2.0 / Bearer.
-2. **Fluxo de Autorização:** Simulação de transações aprovadas e negadas (validação de *status codes* e *payloads* de resposta).
-3. **Estorno (Refund):** Validação de regras de negócio para devoluções parciais e totais.
-4. **Segurança:** Testes de injeção de dados inválidos (Data Type Validation) e validação de cabeçalhos de segurança (OWASP).
+1. **Segurança e Autenticação:** Handshake via OAuth2 (Client Credentials Grant) com gestão dinâmica de escopos (Scopes).
+2. **Fluxo de Autorização:** Simulação de transações aprovadas e negadas (validação de payloads JSON e status codes).
+3. **Gestão de Transações:** Encadeamento de requisições (*API Request Chaining*) para extração de IDs de ordens e processamento de capturas.
+4. **Data Integrity:** Injeção de dados randomizados (random amount) em payloads, garantindo a validação de tipos de dados.
 
 ## 🚀 Como Executar Localmente
 Para rodar esta suite de testes na sua máquina, certifique-se de ter o [Node.js](https://nodejs.org/) instalado.

@@ -533,8 +533,281 @@
       ]
     },
     {
-      "name": "Mercado Pago API",
-      "item": []
+      "name": "PayPal API",
+      "item": [
+        {
+          "name": "Get Auth Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();\r",
+                  "\r",
+                  "if (pm.response.code === 200) {\r",
+                  "    // Definindo a variável no ambiente ativo\r",
+                  "    pm.environment.set(\"paypal_access_token\", jsonData.access_token);\r",
+                  "    console.log(\"Token gerado: \" + jsonData.access_token);\r",
+                  "} else {\r",
+                  "    console.log(\"Erro na API: \" + JSON.stringify(jsonData));\r",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "password",
+                  "value": "EAYU3rE9hB2DehaUexH2LFp87J24frJysI_dgEAZJEolgPffMpGjwh5-SNYV3v7C0MohUeM2M9QEj6E6",
+                  "type": "string"
+                },
+                {
+                  "key": "username",
+                  "value": "AZliWdG0Vs8Ot7an19YFE9VC3mRb4rvqh3PN__PPFuGcv9B31HNO-kOTkzObzgJxwFzuR_eLxWYErfWp",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "grant_type",
+                  "value": "client_credentials",
+                  "type": "text",
+                  "uuid": "eb6180f6-a3c4-4c4d-ad73-cf6517c7fdfd"
+                },
+                {
+                  "key": "scope",
+                  "value": "openid%20https://uri.paypal.com/services/payments/realtimepayment%20https://uri.paypal.com/services/payments/payment/refund",
+                  "type": "text",
+                  "uuid": "6d5ba8e2-023e-481f-ae0e-db347984e730"
+                }
+              ]
+            },
+            "url": {
+              "raw": "https://api-m.sandbox.paypal.com/v1/oauth2/token",
+              "protocol": "https",
+              "host": [
+                "api-m",
+                "sandbox",
+                "paypal",
+                "com"
+              ],
+              "path": [
+                "v1",
+                "oauth2",
+                "token"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Order",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Gera um valor entre 10.00 e 500.00\r",
+                  "var min = 10.00;\r",
+                  "var max = 500.00;\r",
+                  "var randomValue = (Math.random() * (max - min) + min).toFixed(2);\r",
+                  "\r",
+                  "// Salva na variável global do Postman\r",
+                  "pm.variables.set(\"dynamicPaypalAmount\", randomValue);\r",
+                  "\r",
+                  "console.log(\"Valor da ordem gerado: \" + randomValue);\r",
+                  "\r",
+                  "// Captura o ID da ordem criada e joga na memória global\r",
+                  "var jsonData = pm.response.json();\r",
+                  "pm.globals.set(\"orderId\", jsonData.id);\r",
+                  "\r",
+                  "console.log(\"Ordem criada com sucesso. ID: \" + jsonData.id);"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status Code deve ser 201 Created\", function () {\r",
+                  "    pm.response.to.have.status(201);\r",
+                  "});\r",
+                  "\r",
+                  "pm.test(\"Valor capturado no PayPal deve ser igual ao sorteado\", function () {\r",
+                  "    var jsonData = pm.response.json();\r",
+                  "    var valorSorteado = pm.variables.get(\"dynamicPaypalAmount\");\r",
+                  "    \r",
+                  "    // Convertemos para float para comparar numericamente\r",
+                  "    pm.expect(parseFloat(jsonData.purchase_units[0].amount.value)).to.eql(parseFloat(valorSorteado));\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{paypal_access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "PayPal-Request-Id",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{paypal_access_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"intent\": \"CAPTURE\",\r\n  \"purchase_units\": [\r\n    {\r\n      \"amount\": {\r\n        \"currency_code\": \"USD\",\r\n        \"value\": \"{{dynamicPaypalAmount}}\"\r\n      }\r\n    }\r\n  ]\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "https://api-m.sandbox.paypal.com/v2/checkout/orders",
+              "protocol": "https",
+              "host": [
+                "api-m",
+                "sandbox",
+                "paypal",
+                "com"
+              ],
+              "path": [
+                "v2",
+                "checkout",
+                "orders"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Capture Order",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status Code deve ser 201 Created (Capturado)\", function () {\r",
+                  "    pm.response.to.have.status(201);\r",
+                  "});\r",
+                  "\r",
+                  "pm.test(\"Status da ordem deve ser 'COMPLETED'\", function () {\r",
+                  "    var jsonData = pm.response.json();\r",
+                  "    pm.expect(jsonData.status).to.eql(\"COMPLETED\");\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{paypal_access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "PayPal-Request-Id",
+                "value": "{{$guid}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "https://api-m.sandbox.paypal.com/v2/checkout/orders/{{orderId}}/capture",
+              "protocol": "https",
+              "host": [
+                "api-m",
+                "sandbox",
+                "paypal",
+                "com"
+              ],
+              "path": [
+                "v2",
+                "checkout",
+                "orders",
+                "{{orderId}}",
+                "capture"
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {},
+            "exec": [
+              ""
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {},
+            "exec": [
+              ""
+            ]
+          }
+        }
+      ]
     }
   ],
   "event": [
