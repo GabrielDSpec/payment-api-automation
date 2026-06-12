@@ -655,7 +655,7 @@
                   "    pm.globals.set(\"orderId\", jsonData.id); \r",
                   "    console.log(\"ID salvo: \" + jsonData.id);\r",
                   "}\r",
-                  "    }\r",
+                  "\r",
                   "} else {\r",
                   "    console.log(\"Falha ao criar ordem. Código: \" + pm.response.code);\r",
                   "    console.log(\"Resposta: \" + pm.response.text());\r",
