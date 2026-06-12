@@ -24,7 +24,7 @@ jobs:
       - name: Run Postman Collection
         run: |
           newman run Payment-Gateway-API.postman_collection.json \
-            -e PayPal_Environment.postman_environment.json \
+            --environment PayPal_Environment.postman_environment.json \
             --env-var "stripe_api_key=${{ secrets.STRIPE_API_KEY }}" \
             --env-var "paypal_client_id=${{ secrets.PAYPAL_CLIENT_ID }}" \
             --env-var "paypal_client_secret=${{ secrets.PAYPAL_CLIENT_SECRET }}"
