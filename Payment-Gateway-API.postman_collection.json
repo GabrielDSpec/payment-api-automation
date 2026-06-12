@@ -618,15 +618,24 @@
               "listen": "prerequest",
               "script": {
                 "exec": [
-                  "// Gera um valor entre 10.00 e 500.00\r",
+                  "// 1. Gera o valor\r",
                   "var min = 10.00;\r",
                   "var max = 500.00;\r",
                   "var randomValue = (Math.random() * (max - min) + min).toFixed(2);\r",
                   "\r",
-                  "// Salva na variável para ser usada no JSON do body\r",
-                  "pm.globals.set(\"dynamicPaypalAmount\", randomValue);\r",
+                  "// 2. Acessa o objeto da requisição (esta é a mágica do Newman)\r",
+                  "var requestBody = JSON.parse(pm.request.body.raw);\r",
                   "\r",
-                  "console.log(\"Valor da ordem gerado: \" + randomValue);"
+                  "// 3. Modifica o valor diretamente no objeto\r",
+                  "requestBody.purchase_units[0].amount.value = randomValue.toString();\r",
+                  "\r",
+                  "// 4. Salva a modificação de volta no Body da requisição\r",
+                  "pm.request.body.update(JSON.stringify(requestBody));\r",
+                  "\r",
+                  "// 5. Salva para usar no teste depois\r",
+                  "pm.environment.set(\"dynamicPaypalAmount\", randomValue);\r",
+                  "\r",
+                  "console.log(\"Valor injetado diretamente no body: \" + randomValue);"
                 ],
                 "type": "text/javascript",
                 "packages": {},
@@ -700,7 +709,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n  \"intent\": \"CAPTURE\",\r\n  \"purchase_units\": [\r\n    {\r\n      \"amount\": {\r\n        \"currency_code\": \"USD\",\r\n        \"value\": \"{{dynamicPaypalAmount}}\"\r\n      }\r\n    }\r\n  ]\r\n}",
+              "raw": "{\r\n  \"intent\": \"CAPTURE\",\r\n  \"purchase_units\": [\r\n    {\r\n      \"amount\": {\r\n        \"currency_code\": \"USD\",\r\n        \"value\": \"0.00\"\r\n      }\r\n    }\r\n  ]\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
